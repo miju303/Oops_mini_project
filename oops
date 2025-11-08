@@ -1,1 +1,78 @@
+package oopsmini;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.sql.*;
 
+public class TutoringScheduler {
+    public static void main(String[] args) {
+        JFrame frame = new JFrame("Online Tutoring Scheduler");
+
+        // Input fields
+        JTextField nameField = new JTextField(15);
+        String[] subjects = {"Math", "Science", "English", "Computer Science"};
+        JComboBox<String> subjectBox = new JComboBox<>(subjects);
+        JTextField dateField = new JTextField("YYYY-MM-DD", 10);
+        JTextField timeField = new JTextField("HH:MM:SS", 10); // Correct format
+        JButton bookBtn = new JButton("Book Session");
+        // Layout
+        frame.setLayout(new GridLayout(5, 2, 10, 10));
+        frame.add(new JLabel("Student Name:"));
+        frame.add(nameField);
+        frame.add(new JLabel("Subject:"));
+        frame.add(subjectBox);
+        frame.add(new JLabel("Date (YYYY-MM-DD):"));
+        frame.add(dateField);
+        frame.add(new JLabel("Time (HH:MM:SS):"));
+        frame.add(timeField);
+        frame.add(new JLabel(""));
+        frame.add(bookBtn);
+
+        // Button action
+        bookBtn.addActionListener(e -> {
+            String name = nameField.getText().trim();
+            String subject = (String) subjectBox.getSelectedItem();
+            String date = dateField.getText().trim();
+            String time = timeField.getText().trim();
+
+            // Basic validation
+            if (name.isEmpty() || date.isEmpty() || time.isEmpty()) {
+                JOptionPane.showMessageDialog(frame, "Please fill all fields correctly.");
+                return;
+            }
+
+            try {
+                // Validate date and time format
+                Date sqlDate = Date.valueOf(date);       // Must be YYYY-MM-DD
+                Time sqlTime = Time.valueOf(time);       // Must be HH:MM:SS
+
+                // Connect to database
+                Connection conn = DriverManager.getConnection(
+                    "jdbc:mysql://localhost:3306/tutoringdb5", "root", "miju");
+
+                String sql = "INSERT INTO sessions (student_name, subject, session_date, session_time) VALUES (?, ?, ?, ?)";
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                stmt.setString(1, name);
+                stmt.setString(2, subject);
+                stmt.setDate(3, sqlDate);
+                stmt.setTime(4, sqlTime);
+
+                stmt.executeUpdate();
+                JOptionPane.showMessageDialog(frame, "Session booked successfully!");
+                conn.close();
+            } catch (IllegalArgumentException formatEx) {
+                JOptionPane.showMessageDialog(frame, "Invalid date or time format.\nUse YYYY-MM-DD and HH:MM:SS.");
+            } catch (SQLException sqlEx) {
+                sqlEx.printStackTrace();
+                JOptionPane.showMessageDialog(frame, "Database error: " + sqlEx.getMessage());
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(frame, "Unexpected error: " + ex.getMessage());
+            }
+        });
+
+        frame.setSize(400, 250);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setVisible(true);
+    }
+}
